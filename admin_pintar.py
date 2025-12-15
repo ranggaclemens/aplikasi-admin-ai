@@ -5,10 +5,11 @@ import json
 
 # --- BAGIAN KONFIGURASI ---
 # Tempel API Key Anda di antara tanda kutip di bawah ini
-API_KEY = "AIzaSyBKe02PajXT9fTpnVYfegE0SHWCA-AgauM" 
 
 # Konfigurasi AI
-genai.configure(api_key=API_KEY)
+# Mengambil kunci dari Brankas Rahasia Streamlit
+api_key = st.secrets["GOOGLE_API_KEY"]
+genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- TAMPILAN WEBSITE ---
