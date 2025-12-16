@@ -12,73 +12,75 @@ api_key = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# --- TAMPILAN WEBSITE ---
-st.set_page_config(page_title="AI Admin Otomatis", layout="wide")
+# --- TAMPILAN WEBSITE (VERSI BISNIS) ---
+st.set_page_config(page_title="Jose AI Assistant", layout="wide")
 
-st.title("🤖 AI Admin: Dari Chat Jadi Excel")
-st.write("Copy chat pesanan yang berantakan, paste di bawah, biarkan AI merapikannya.")
+# --- SIDEBAR (IDENTITAS BISNIS ANDA) ---
+with st.sidebar:
+    st.header("🏢 Jose AI Tools")
+    st.info("Aplikasi ini dibuat khusus untuk membantu UMKM merekap orderan otomatis.")
+    
+    st.write("---")
+    st.header("👤 Tentang Creator")
+    st.write("**Jose Digital Solutions**")
+    st.caption("Membantu UMKM kerja lebih cepat dengan Automasi AI.")
+    
+    # Tombol Link ke WhatsApp Anda (GANTI NOMOR INI!)
+    wa_link = "https://wa.me/6285602683808?text=Halo%20saya%20tertarik%20bikin%20aplikasi%20AI"
+    st.link_button("🚀 Pesan Aplikasi Ini", wa_link)
 
-# Kolom Input
+# --- BAGIAN UTAMA ---
+st.title("🤖 Asisten Rekap Orderan Otomatis")
+st.markdown("""
+**Capek rekap chat satu-satu ke Excel?** Paste chat orderan yang berantakan di bawah, biarkan AI merapikannya dalam 1 detik.
+""")
+
+# Kolom Input dan Output
 col1, col2 = st.columns([1, 1])
 
 with col1:
     st.subheader("1. Paste Chat Disini")
-    raw_text = st.text_area("Masukan teks pesanan (WhatsApp/Email):", height=300)
-    process_btn = st.button("✨ Proses Data Sekarang", type="primary")
+    chat_input = st.text_area("Masukan teks pesanan (WhatsApp/Email):", height=300, placeholder="Contoh: Mas Budi pesen Kaos Hitam L 2pcs kirim ke Jakarta...")
+    tombol_proses = st.button("✨ Proses Data Sekarang", type="primary")
 
-# --- LOGIKA OTAK AI ---
-if process_btn and raw_text:
-    with col2:
-        st.subheader("2. Hasil Rapih (Excel)")
-        with st.spinner("Sedang memanggil otak AI..."):
+with col2:
+    st.subheader("2. Hasil Rapih (Excel)")
+    
+    if tombol_proses and chat_input:
+        with st.spinner("Sedang memproses... (Tunggu sebentar)"):
             try:
-                # Perintah ke AI (Prompt Engineering)
+                # Prompt Rahasia (Instruksi ke Otak AI)
                 prompt = f"""
-                Kamu adalah asisten admin admin. Tugasmu adalah mengekstrak data pesanan dari teks berikut.
-                Teks: "{raw_text}"
+                Kamu adalah admin toko online yang teliti. 
+                Tugasmu adalah mengekstrak data pesanan dari teks berikut menjadi format JSON.
+                Ambil data: Nama, Kota, Barang, Warna, Ukuran, Qty (jumlah), dan Cara Bayar.
                 
-                Instruksi:
-                1. Identifikasi Nama Pelanggan, Alamat Kota, Barang Pesanan, Warna, Ukuran, Jumlah, dan Metode Bayar.
-                2. Jika ada informasi yang tidak ada, isi dengan "-".
-                3. Keluarkan HANYA dalam format JSON List. Jangan ada teks lain.
+                Teks pesanan:
+                "{chat_input}"
                 
-                Contoh format JSON:
-                [
-                    {{"Nama": "Budi", "Kota": "Jakarta", "Barang": "Kaos", "Warna": "Hitam", "Ukuran": "L", "Qty": 2, "Bayar": "Transfer"}}
-                ]
+                Keluarkannya HANYA JSON murni. Jangan ada tulisan lain.
+                Format JSON list of objects: [{{...}}, {{...}}]
                 """
                 
-                # Mengirim ke Google
                 response = model.generate_content(prompt)
-                cleaned_text = response.text.strip().replace("```json", "").replace("```", "")
+                cleaned_response = response.text.replace("```json", "").replace("```", "").strip()
+                data = json.loads(cleaned_response)
                 
-                # Mengubah jadi Tabel
-                data_json = json.loads(cleaned_text)
-                df = pd.DataFrame(data_json)
-                
-                # Tampilkan Tabel
+                # Buat Tabel
+                df = pd.DataFrame(data)
                 st.dataframe(df, use_container_width=True)
                 
-                # Tombol Download Excel
-                file_excel = "data_pesanan.xlsx"
-                df.to_excel(file_excel, index=False)
-                
-                with open(file_excel, "rb") as file:
-                    st.download_button(
-                        label="📥 Download File Excel",
-                        data=file,
-                        file_name="rekap_pesanan.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
+                # Tombol Download
+                excel_file = "rekap_order.xlsx"
+                df.to_excel(excel_file, index=False)
+                with open(excel_file, "rb") as f:
+                    st.download_button("📥 Download File Excel", f, file_name="rekap_harian.xlsx")
                     
                 st.success("Berhasil! Data siap didownload.")
                 
             except Exception as e:
-                st.error(f"Terjadi kesalahan: {e}. Coba cek API Key atau format teksnya.")
+                st.error("Gagal memproses. Coba cek format teksnya atau coba lagi.")
+                st.error(f"Error detail: {e}")
 
-elif process_btn and not raw_text:
-    st.warning("Tolong masukkan teks chatnya dulu ya.")
-
-# Footer
-st.markdown("---")
-st.caption("Dibuat dengan Python & Gemini AI")
+    elif not chat_input:
+        st.info("👈 Silakan masukkan teks pesanan di sebelah kiri dulu.")
